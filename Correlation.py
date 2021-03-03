@@ -8,7 +8,7 @@ class Correlation:
         for method in methods:
             corrMatrix = df.corr(method=method)
             plt.figure(figsize=figsize)
-            sns.heatmap(corrMatrix, cmap='coolwarm', linewidths=1.0, annot=True)
+            sns.heatmap(corrMatrix, cmap='GnBu', linewidths=1.0, annot=True)
             plt.title(f'Correlation matrix with {method.capitalize()} correlation coeff.')
             plt.tight_layout()
 
