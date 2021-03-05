@@ -71,14 +71,9 @@ class HyperParams:
             rows.append(r)
         return rows
 
-    def best_regression(self, df, colsX, colsY, max_random=5, filename: str = 'best_regression.csv'):
+    def best_regression(self, df, colsX, colsY, is_comb: bool = False, max_random=5, filename: str = 'best_regression.csv'):
         print(f'X columns: {colsX}')
         print(f'Y columns: {colsY}')
-        print(f'{"-" * 25}')
-
-        combs = [list(combinations(colsX, i)) for i in range(1, len(colsX)+1)]
-        combs = list(chain(*combs))  # flatten list
-        print(f'Combination of all columns: {combs}')
         print(f'{"-" * 25}')
 
         range_testsize = np.arange(0.3, 0.51, 0.01)
@@ -86,11 +81,24 @@ class HyperParams:
         print(f'{"-" * 25}')
 
         to_test = []
-        for cols in combs:
+        if is_comb:
+            combs = [list(combinations(colsX, i)) for i in range(1, len(colsX)+1)]
+            combs = list(chain(*combs))  # flatten list
+            print(f'Combination of all columns: {combs}')
+            print(f'{"-" * 25}')
+
+            to_test = []
+            for cols in combs:
+                for size in range_testsize:
+                    randomlist = random.sample(range(0, 100000), max_random)
+                    for seed in randomlist:
+                        to_test.append([list(cols), round(size, 2), seed])
+        else:
             for size in range_testsize:
                 randomlist = random.sample(range(0, 100000), max_random)
                 for seed in randomlist:
-                    to_test.append([list(cols), round(size, 2), seed])
+                    to_test.append([colsX, round(size, 2), seed])
+
         print(f'Tests to be processed: {len(to_test)}')
         print(f'{"-" * 25}')
 
@@ -112,7 +120,7 @@ class HyperParams:
 
     def _evaluate_regression(self, df, t, colsY):
         X_train, X_test, Y_train, Y_test = train_test_split(df[t[0]], df[colsY], test_size=t[1], random_state=t[2], shuffle=True)
-        model = LinearRegression(fit_intercept=True, normalize=True, copy_X=False, n_jobs=-1, positive=True)
+        model = LinearRegression(fit_intercept=True, normalize=True, positive=True)
         model = model.fit(X_train, Y_train)  # passiamo i set di addestramento
 
         Y_pred = model.predict(X_test)  # eseguiamo la predizione sul test set
@@ -129,58 +137,7 @@ class HyperParams:
     def _max_r2score_group(self, df, group):
         return df.get_group(group)['r2_score'].idxmax()
 
-    '''def best_split_dataset(self, df, colsX, colsY, n_comb: int = 10):
-        combs = [list(combinations(colsX, i)) for i in range(1, len(colsX)+1)]
-
-        flatten = list(chain(*combs))
-        # print(len(flatten), flatten)
-
-        test_size = np.arange(0.3, 0.5, 0.01)
-        # print(len(test_size), test_size)
-
-        test_list = []
-        for cols in flatten:
-            for size in test_size:
-                randomlist = random.sample(range(0, 100000), n_comb)
-                for seed in randomlist:
-                    test_list.append([list(cols), round(size, 2), seed])
-        # print(len(test_list), test_list)
-
-        r = Parallel(n_jobs=mlp.cpu_count(), verbose=10)(
-            delayed(self._par_linear_regression)
-            (df[test[0]], df[colsY], test[1], test[2]) for test in test_list)
-
-        df_result = pd.DataFrame(r, columns=['X', 'Y', 'test_size', 'random_state', 'r2_score'])
-        df_group = df_result.groupby(['X'])
-
-        r = Parallel(n_jobs=mlp.cpu_count(), verbose=10)(
-            delayed(self._par_max_r2score_group)
-            (df_group, group) for group in df_group.groups.keys())
-
-        df_result = df_result.iloc[r, :].sort_values(by=['r2_score'], ascending=False)
-
-        df_result.to_csv(os.path.join(os.getcwd(), 'results', f'HyperParams_TrainTestSplit.csv'),
-                         index=False, header=True, sep='\t', encoding='utf-8')
-
-    def _par_linear_regression(self, X, Y, size, seed):
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=size, random_state=seed, shuffle=True)
-        model = LinearRegression(fit_intercept=True, normalize=True, copy_X=False, n_jobs=-1, positive=True)
-        model = model.fit(X_train, Y_train)  # passiamo i set di addestramento
-
-        Y_pred = model.predict(X_test)  # eseguiamo la predizione sul test set
-
-        row = {
-            'X': ', '.join(X.columns),
-            'Y': ', '.join(Y.columns),
-            'test_size': size,
-            'random_state': seed,
-            'r2_score': r2_score(Y_test, Y_pred)
-        }
-        return row
-
-    def _par_max_r2score_group(self, df, group):
-        return df.get_group(group)['r2_score'].idxmax()
-
+    '''
     def for_classifiers(self, dataset, colsY_numeric):
         df = pd.read_csv(os.path.join(os.getcwd(), 'results', f'HyperParams_TrainTestSplit.csv'), sep='\t')
         df = df[df['r2_score'] > 0.20]
