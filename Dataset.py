@@ -62,7 +62,7 @@ class Dataset:
         if cols is None:
             df_object = self.dataset.select_dtypes(include=['object'])
             cols = df_object.columns.values
-            newcols = [f'{c}_factorized' for c in cols]
+            newcols = [f'{c}_fact' for c in cols]
 
         if len(cols) == len(newcols):
             for c, nc in zip(cols, newcols):
@@ -80,3 +80,6 @@ class Dataset:
                                                             shuffle=shuffle)
         return [X_train, X_test, Y_train, Y_test]
 
+    def export_csv(self):
+        self.dataset.to_csv(os.path.join(os.getcwd(), 'results', 'dataset_processed.csv'), index=False,
+                            header=True, sep='\t', encoding='utf-8')
