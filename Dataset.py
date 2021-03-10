@@ -32,6 +32,9 @@ class Dataset:
             # Takes columns that have a NaN frequency greater than 50% (0.5)
             cols_to_del = [i for i, v in s_nan.iteritems() if v > 0.5]
 
+            # Takes columns that have constant value and joins it to the list of columns to delete
+            cols_to_del = [*cols_to_del, *self.dataset.columns[self.dataset.nunique() <= 1].values]
+
             # Drop specified labels from columns.
             self.dataset = self.dataset.drop(cols_to_del, axis=1)
 
