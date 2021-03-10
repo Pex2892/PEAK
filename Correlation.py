@@ -23,7 +23,7 @@ class Correlation:
 
         self.matrix_corr(obj.dataset, ['pearson', 'spearman', 'kendall'], show=False, figsize=(15, 7))
 
-        df_corr.to_csv(os.path.join(os.getcwd(), 'results', 'correlation', 'All_correlations.csv'), index=False, header=True, sep='\t', encoding='utf-8')
+        df_corr.to_csv(os.path.join(os.getcwd(), 'results', 'correlation', 'all_correlations.csv'), index=False, header=True, sep='\t', encoding='utf-8')
 
     def corr_2_col(self, df, cols, title: str = None, show: bool = True, figsize: tuple = (10, 5)):
         scores = [df[cols].corr(method='pearson').iloc[0, 1], df[cols].corr(method='spearman').iloc[0, 1],
@@ -44,7 +44,7 @@ class Correlation:
             if show:
                 plt.show()
             else:
-                plt.savefig(os.path.join(os.getcwd(), 'results', 'correlation', f'corr_{"".join(re.split("[^a-zA-Z]*", cols[0]))}_{"".join(re.split("[^a-zA-Z]*", cols[1]))}.png'))
+                plt.savefig(os.path.join(os.getcwd(), 'results', 'correlation', 'plot', f'corr_{"".join(re.split("[^a-zA-Z]*", cols[0]))}_{"".join(re.split("[^a-zA-Z]*", cols[1]))}.png'))
 
         row = {'columns': ' - '.join(cols), 'pearson': scores[0], 'spearman': scores[1], 'kendall': scores[2]}
 
@@ -60,6 +60,6 @@ class Correlation:
             if show:
                 plt.show()
             else:
-                plt.savefig(os.path.join(os.getcwd(), 'results', 'correlation', f'corr_matrix_{method}.png'))
+                plt.savefig(os.path.join(os.getcwd(), 'results', 'correlation', 'matrix', f'corr_matrix_{method}.png'))
 
         plt.close()
