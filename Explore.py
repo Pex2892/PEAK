@@ -2,8 +2,7 @@ import os
 import re
 import numpy as np
 import pandas as pd
-from matplotlib import colors
-import matplotlib.pyplot as plt
+from matplotlib import colors, pyplot as plt
 
 
 class Explore:
@@ -14,11 +13,11 @@ class Explore:
         for c in cols:
             n = pd.unique(obj.dataset[c]).shape[0]
             title = f'Distribution of {"".join(re.split("[^a-zA-Z]*", c))}'
+            figname = f'explore_{"".join(re.split("[^a-zA-Z]*", c))}.png'
             if 1 < n < 7:
-                self.multiple_barplot(data=[[obj.dataset[c], title, 'Labels', 'Frequency']], tot_subplots=1, tot_columns=1, title='', show=True)
+                self.multiple_barplot(data=[[obj.dataset[c], title, 'Labels', 'Frequency']], tot_subplots=1, tot_columns=1, title='', show=False, figname=figname)
             else:
-                self.multiple_barplot_horizontal(data=[[obj.dataset[c], title, 'Frequency', 'Labels', 1]], tot_subplots=1, tot_columns=1, title='', show=True)
-
+                self.multiple_barplot_horizontal(data=[[obj.dataset[c], title, 'Frequency', 'Labels', 1]], tot_subplots=1, tot_columns=1, title='', show=False, figname=figname)
 
     def multiple_barplot(self, data: list, tot_subplots: int, tot_columns: int, title: str, show=True, figname='multiplebarplot.png', figsize=(10, 5)):
         # Compute Rows required
@@ -61,7 +60,7 @@ class Explore:
         if show:
             plt.show()
         else:
-            plt.savefig(os.path.join(os.getcwd(), 'results', figname))
+            plt.savefig(os.path.join(os.getcwd(), 'results', 'exploration', figname))
         plt.close()
 
     def multiple_barplot_horizontal(self, data: list, tot_subplots: int, tot_columns: int, title: str, show=True, figname='multiplebarplot.png', figsize=(10, 5)):
@@ -108,5 +107,5 @@ class Explore:
         if show:
             plt.show()
         else:
-            plt.savefig(os.path.join(os.getcwd(), 'results', figname))
+            plt.savefig(os.path.join(os.getcwd(), 'results', 'exploration', figname))
         plt.close()
