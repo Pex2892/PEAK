@@ -69,7 +69,7 @@ def clear_data():
         os.path.join(p, 'correlation', 'matrix'),
         os.path.join(p, 'cross_validation'),
         os.path.join(p, 'regression', 'plot'),
-        os.path.join(p, 'regression', 'hyper_params'),
+        os.path.join(p, 'regression'),
         os.path.join(p, 'classifier', 'plot'),
         os.path.join(p, 'classifier', 'hyper_params'),
     ]
