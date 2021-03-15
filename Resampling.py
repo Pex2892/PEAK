@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 class Resampling:
 
-    def automate2(self, dataset, colsY):
+    def automate_lm(self, dataset, colsY):
         l_colsY = colsY.split(',')
         print(f'Columns in Y: {l_colsY}')
 
@@ -75,12 +75,12 @@ class Resampling:
                         'mean_test_score': mtest
                     })
         df_cv_results = pd.DataFrame(results)
-        df_cv_results.to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_combinations_features.csv'),
+        df_cv_results.to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_combinations_features_regression.csv'),
                              index=False, header=True, sep='\t', encoding='utf-8')
-        print(f'The file "combinations_CV.csv" has been saved')
+        print(f'The file "CV_combinations_features_regression.csv" has been saved')
         print(f'{"-" * 25}')
 
-        df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_combinations_features.csv'), sep='\t')
+        df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_combinations_features_regression.csv'), sep='\t')
         # print(df)
 
         df_group = df.groupby(by=['n_splits', 'n_features_X'])
@@ -92,10 +92,20 @@ class Resampling:
                 rows.append(row.to_dict())
 
         df_best_CV = pd.DataFrame(rows, columns=df.columns)
-        df_best_CV.to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_best_features.csv'), index=False,
+        df_best_CV.to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_best_features_regression.csv'), index=False,
                           header=True, sep='\t', encoding='utf-8')
-        print(f'The file "CV_best_features.csv" has been saved')
+        print(f'The file "CV_best_features_regression.csv" has been saved')
         print(f'{"-" * 25}')
+
+
+
+
+
+
+
+
+
+
 
     '''def automate(self, dataset, colsY):
         l_colsY = colsY.split(',')

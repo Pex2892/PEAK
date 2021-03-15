@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 class Regression:
 
     def automate(self, dataset):
-        df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_best_features.csv'), sep='\t')
+        df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_best_features_regression.csv'), sep='\t')
 
         to_test = []
         for i, v in df.iterrows():
