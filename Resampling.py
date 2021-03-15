@@ -9,7 +9,20 @@ from sklearn.feature_selection import RFE
 from sklearn.linear_model import LinearRegression
 import sklearn.metrics as sm
 import matplotlib.pyplot as plt
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
 
+import math
+import ast
+import warnings
+warnings.filterwarnings('ignore')
 
 class Resampling:
 
@@ -98,9 +111,122 @@ class Resampling:
         print(f'{"-" * 25}')
 
 
+    def automate_classifiers(self, dataset, colsY):
+        # example of grid searching key hyperparametres for logistic regression
+        # define dataset
+
+        Y = dataset[[f'{colsY}_fact']]
+        print(f'Columns in Y: {Y.columns.values}')
+
+        X = dataset[dataset.columns.difference([colsY, f'{colsY}_fact'])].select_dtypes(include=['int64', 'float64'])
+        print(f'Columns in X: {X.columns.values}')
+
+        '''models = [
+            [LogisticRegression(), dict(solver=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'], penalty=['l1', 'l2', 'elasticnet', 'none'], C=[100, 10, 1.0, 0.1, 0.01])],
+            [KNeighborsClassifier(), dict(n_neighbors=range(1, 21, 2), weights=['uniform', 'distance'], algorithm=['ball_tree', 'kd_tree', 'brute'], metric=['euclidean', 'manhattan', 'minkowski'])],
+            [SVC(), dict(kernel=['linear', 'poly', 'rbf', 'sigmoid'], C=[50, 10, 1.0, 0.1, 0.01], gamma=['scale'])],
+            [RandomForestClassifier(), dict(n_estimators=[10, 100, 1000], criterion=['gini', 'entropy'], max_features=['sqrt', 'log2', 'none'], class_weight=['balanced', 'balanced_subsample', 'none'])],
+            [GaussianNB(), dict(var_smoothing=np.logspace(0, -9, num=100))],
+            [DecisionTreeClassifier(), dict(criterion=['gini', 'entropy'], splitter=['best', 'random'], max_features=['sqrt', 'log2', 'none'], class_weight=['balanced', 'none'])],
+            [MLPClassifier(), dict(hidden_layer_sizes=[(50, 50, 50), (50, 100, 50), (100,)], activation=['identity', 'logistic', 'tanh', 'relu'], solver=['lbfgs', 'sgd', 'adam'], alpha=[0.0001, 0.05], learning_rate=['constant', 'invscaling', 'adaptive'], max_iter=[100, 200])]
+        ]
+        cv = [RepeatedStratifiedKFold(n_splits=i, n_repeats=2, random_state=2892) for i in range(2, 5, 1)]
+
+        combs = list(product(*[models, cv]))
+        for i in range(0, len(combs)):
+            self._hyperparams_classifiers(Y, X, combs[i][0][0], combs[i][0][1], combs[i][1])'''
 
 
+        # df_cv_results = pd.DataFrame(best_rows)
+        # df_cv_results.to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_best_hyperparams_classification.csv'),
+        #                     index=False, header=True, sep='\t', encoding='utf-8')
 
+        # test come prendere i dati dal csv
+        '''best_params = "{'C': 10, 'penalty': 'l2', 'solver': 'liblinear'}"
+        best_params = ast.literal_eval(best_params)
+        model = LogisticRegression()
+        model.C = best_params['C']
+        model.penalty = best_params['penalty']
+        model.solver = best_params['solver']
+        n_split = 3
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=math.ceil(X.shape[0]/n_split), random_state=2892)
+        model = model.fit(X_train, Y_train)  # passiamo i set di addestramento
+        probas_ = model.predict_proba(X_test)
+
+        Y_pred = model.predict(X_test)  # eseguiamo la predizione sul test set
+
+        tn, fp, fn, tp = sm.confusion_matrix(Y_test, Y_pred).ravel()
+
+        # Posso sapere tutte le caratteristiche del classificatore
+        # print(sm.classification_report(Y_test, Y_pred))
+
+        fpr, tpr, thresholds = sm.roc_curve(Y_test, probas_[:, 1])
+
+        scores = [
+            sm.accuracy_score(Y_test, Y_pred),
+            sm.precision_score(Y_test, Y_pred),
+            sm.recall_score(Y_test, Y_pred),
+            sm.f1_score(Y_test, Y_pred),
+            sm.auc(fpr, tpr)
+        ]
+        print(scores)'''
+
+
+    def _hyperparams_classifiers(self, Y, X, model, grid, cv, scoring: str = 'accuracy'):
+        gs = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv, scoring=scoring, error_score=0)
+        grid_result = gs.fit(X, Y)
+
+        rows = []
+        for i in range(0, grid_result.cv_results_['mean_test_score'].shape[0], 1):
+            rows.append({
+                'model': gs.estimator,
+                'X': ','.join(X.columns.values),
+                'Y': ','.join(Y.columns.values),
+                'cv': cv.__str__().split('(')[0],
+                'n_splits': int(cv.get_n_splits(X) / cv.n_repeats),
+                'n_repeats': cv.n_repeats,
+                'random_state': cv.random_state,
+                'scoring': scoring,
+                'mean_test_score': grid_result.cv_results_['mean_test_score'][i],
+                'std_test_score': grid_result.cv_results_['std_test_score'][i],
+                'parameters': grid_result.cv_results_['params'][i]
+            })
+
+        # best rows
+        # rows[grid_result.best_index_]
+
+        df_cv_results = pd.DataFrame(rows)
+        p = os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_hyperparams_classification.csv')
+        df_cv_results.to_csv(p, mode='a', index=False, header=not os.path.exists(p), sep='\t', encoding='utf-8')
+
+
+        # example of grid searching key hyperparametres for SVC
+        # define dataset
+        # define model and parameters
+
+
+        # example of grid searching key hyperparameters for RandomForestClassifier
+        '''from sklearn.ensemble import RandomForestClassifier
+        # define dataset
+        # define models and parameters
+        model = RandomForestClassifier()
+        n_estimators = [10, 100, 1000]
+        criterion = ['gini', 'entropy']
+        max_features = ['auto', 'sqrt', 'log2']
+        class_weight = ['balanced', 'balanced_subsample', None]
+        # define grid search
+        grid = dict(n_estimators=n_estimators, criterion=criterion, max_features=max_features, class_weight=class_weight)
+        cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=5, random_state=2892)
+        grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv, scoring='accuracy',
+                                   error_score=0)
+        grid_result = grid_search.fit(X, Y)
+        # summarize results
+        print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+        means = grid_result.cv_results_['mean_test_score']
+        stds = grid_result.cv_results_['std_test_score']
+        params = grid_result.cv_results_['params']
+        for mean, stdev, param in zip(means, stds, params):
+            print("%f (%f) with: %r" % (mean, stdev, param))'''
 
 
 
