@@ -27,9 +27,10 @@ class Classifier:
             model_name = v['model'].replace('()', '')
             colsY = v['Y'].split(',')
             colsX = v['X'].split(',')
-            test_size = math.ceil(dataset[colsX].shape[0] / v['n_splits'])
+            test_size = round(dataset[colsX].shape[0] / v['n_splits'])
+            train_size = dataset.shape[0] - test_size
 
-            r = self.calculate(dataset, model, model_name, colsX, colsY, test_size=test_size,
+            r = self.calculate(dataset, model, model_name, colsX, colsY, train_size=train_size, test_size=test_size,
                                seed=v['random_state'], show_plot=False)
             roc_curve_clf.append(r)
 
@@ -85,9 +86,9 @@ class Classifier:
         model.random_state = s
         return model
 
-    def calculate(self, dataset, model, model_name: str, colsX, colsY, test_size, seed, show_plot: bool = True, fig_name: str = None):
+    def calculate(self, dataset, model, model_name: str, colsX, colsY, train_size, test_size, seed, show_plot: bool = True, fig_name: str = None):
 
-        X_train, X_test, Y_train, Y_test = train_test_split(dataset[colsX], dataset[colsY], test_size=test_size, random_state=None)
+        X_train, X_test, Y_train, Y_test = train_test_split(dataset[colsX], dataset[colsY], train_size=train_size, test_size=test_size, random_state=seed)
 
         m = model.fit(X_train, Y_train)
         probas_ = m.predict_proba(X_test)
