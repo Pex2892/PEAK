@@ -121,7 +121,7 @@ class Resampling:
         X = dataset[dataset.columns.difference([colsY, f'{colsY}_fact'])].select_dtypes(include=['int64', 'float64'])
         print(f'Columns in X: {X.columns.values}')
 
-        '''models = [
+        models = [
             [LogisticRegression(), dict(solver=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'], penalty=['l1', 'l2', 'elasticnet', 'none'], C=[100, 10, 1.0, 0.1, 0.01])],
             [KNeighborsClassifier(), dict(n_neighbors=range(1, 21, 2), weights=['uniform', 'distance'], algorithm=['ball_tree', 'kd_tree', 'brute'], metric=['euclidean', 'manhattan', 'minkowski'])],
             [SVC(), dict(kernel=['linear', 'poly', 'rbf', 'sigmoid'], C=[50, 10, 1.0, 0.1, 0.01], gamma=['scale'])],
@@ -130,11 +130,11 @@ class Resampling:
             [DecisionTreeClassifier(), dict(criterion=['gini', 'entropy'], splitter=['best', 'random'], max_features=['sqrt', 'log2', 'none'], class_weight=['balanced', 'none'])],
             [MLPClassifier(), dict(hidden_layer_sizes=[(50, 50, 50), (50, 100, 50), (100,)], activation=['identity', 'logistic', 'tanh', 'relu'], solver=['lbfgs', 'sgd', 'adam'], alpha=[0.0001, 0.05], learning_rate=['constant', 'invscaling', 'adaptive'], max_iter=[100, 200])]
         ]
-        cv = [RepeatedStratifiedKFold(n_splits=i, n_repeats=2, random_state=2892) for i in range(2, 5, 1)]
+        cv = [RepeatedStratifiedKFold(n_splits=i, n_repeats=2, random_state=2892) for i in range(2, 3, 1)]
 
         combs = list(product(*[models, cv]))
         for i in range(0, len(combs)):
-            self._hyperparams_classifiers(Y, X, combs[i][0][0], combs[i][0][1], combs[i][1])'''
+            self._hyperparams_classifiers(Y, X, combs[i][0][0], combs[i][0][1], combs[i][1])
 
         df_clf = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_hyperparams_classification.csv'), sep='\t')
 
@@ -145,7 +145,6 @@ class Resampling:
     def _hyperparams_classifiers(self, Y, X, model, grid, cv, scoring: str = 'accuracy'):
         gs = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv, scoring=scoring, error_score=0)
         grid_result = gs.fit(X, Y)
-
         rows = []
         for i in range(0, grid_result.cv_results_['mean_test_score'].shape[0], 1):
             rows.append({
