@@ -1,10 +1,10 @@
 import os
 import shutil
-import argparse
-from pathlib import Path
-import multiprocessing as mlp
 import configparser
 import ast
+import multiprocessing as mlp
+from pathlib import Path
+
 
 def header():
     t = '========================================================\n' \
@@ -30,36 +30,14 @@ def read_args():
 
     dataset_args = dict(filename=cfg.get('dataset', 'fname'), sep=cfg.get('dataset', 'separator'), skiprows=cfg.getint('dataset', 'skiprows'))
 
-    regression_args = dict(y=cfg.get('regression', 'y'), resampling=ast.literal_eval(cfg.get('regression', 'resampling')))
+    regression_args = dict(enable=cfg.getint('regression', 'enable'), y=cfg.get('regression', 'y'), resampling=ast.literal_eval(cfg.get('regression', 'resampling')))
 
-    classification_args = dict(y=cfg.get('classification', 'y'), resampling=ast.literal_eval(cfg.get('classification', 'resampling')))
+    classification_args = dict(enable=cfg.getint('classification', 'enable'), y=cfg.get('classification', 'y'), resampling=ast.literal_eval(cfg.get('classification', 'resampling')))
 
     args = dict(settings=settings_args, dataset=dataset_args, regression=regression_args, classification=classification_args)
     print(f'> Parameters: {args}')
 
     return args
-
-
-def check_args(dataset, Y_regr, Y_clf):
-    cols_Y_regr = Y_regr.split(',')
-
-    for c in cols_Y_regr:
-        if not c in dataset.columns:
-            print(f'La colonna "{c}" non esiste all\'interno del dataset')
-            exit()
-
-        if not dataset[c].dtype in ['int64', 'float64']:
-            print(f'La colonna "{c}" non è di tipo numerico')
-            exit()
-
-    cols_Y_clf = Y_clf.split(',', 1)
-    for c in cols_Y_clf:
-        if not c in dataset.columns:
-            print(f'La colonna "{c}" non esiste all\'interno del dataset')
-            exit()
-
-        if not dataset[c].dtype in ['object']:
-            print(f'La colonna "{c}" non è di tipo categoriale')
 
 
 def clear_data(clear: bool):
@@ -83,6 +61,6 @@ def clear_data(clear: bool):
         for p in folders:
             Path(p).mkdir(parents=True, exist_ok=True)
 
-        print('>>> Previous data has been deleted')
+        print('>>> Previous results has been deleted')
     else:
-        print('>>> Previous data has not been deleted')
+        print('>>> Previous results has not been deleted')
