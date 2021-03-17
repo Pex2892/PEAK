@@ -3,7 +3,8 @@ import shutil
 import argparse
 from pathlib import Path
 import multiprocessing as mlp
-
+import configparser
+import ast
 
 def header():
     t = '========================================================\n' \
@@ -19,20 +20,22 @@ def header():
 
 
 def read_args():
-    parser = argparse.ArgumentParser(description='PEAK')
+    cfg = configparser.ConfigParser()
+    cfg.read('settings.cfg')
 
-    parser.add_argument('-db', '--dataset', type=str, help='Inserire il dataset', default='', required=True)
-    parser.add_argument('-yr', '--Y_regr', type=str, help='Colonne dipententi per la regressione', default='')
-    parser.add_argument('-yc', '--Y_clf', type=str, help='Colonna dipententi per la classificazione', default='')
-    parser.add_argument('-c', '--cpu', type=int, help='(optional) Maximum number of CPUs used '
-                                                        'during the analysis – Default value = 0', choices=range(0, mlp.cpu_count()), default=0)
+    settings_args = dict(clear=cfg.getint('settings', 'clear'), seed=cfg.getint('settings', 'seed'), cpu=cfg.getint('settings', 'cpu'))
 
-    args = parser.parse_args()
+    if settings_args['cpu'] == 0 or settings_args['cpu'] > mlp.cpu_count():
+        settings_args['cpu'] = mlp.cpu_count()
 
-    if args.cpu == 0:
-        args.cpu = mlp.cpu_count()
+    dataset_args = dict(filename=cfg.get('dataset', 'fname'), sep=cfg.get('dataset', 'separator'))
 
-    print(args)
+    regression_args = dict(y=cfg.get('regression', 'y'), resampling=ast.literal_eval(cfg.get('regression', 'resampling')))
+
+    classification_args = dict(y=cfg.get('classification', 'y'), resampling=ast.literal_eval(cfg.get('classification', 'resampling')))
+
+    args = dict(settings=settings_args, dataset=dataset_args, regression=regression_args, classification=classification_args)
+    print(f'>>> Parameters: {args}')
 
     return args
 
@@ -58,25 +61,28 @@ def check_args(dataset, Y_regr, Y_clf):
         if not dataset[c].dtype in ['object']:
             print(f'La colonna "{c}" non è di tipo categoriale')
 
-def clear_data():
-    p = os.path.join(os.getcwd(), 'results')
-    if os.path.exists(p):
-        shutil.rmtree(p)
 
-    folders = [
-        os.path.join(p, 'exploration'),
-        os.path.join(p, 'correlation', 'plot'),
-        os.path.join(p, 'correlation', 'matrix'),
-        os.path.join(p, 'cross_validation'),
-        os.path.join(p, 'regression', 'plot'),
-        os.path.join(p, 'regression'),
-        os.path.join(p, 'classifier', 'plot'),
-        os.path.join(p, 'classifier', 'hyper_params'),
-    ]
+def clear_data(clear: bool):
 
-    for p in folders:
-        Path(p).mkdir(parents=True, exist_ok=True)
+    if clear == 1:
+        p = os.path.join(os.getcwd(), 'results')
+        if os.path.exists(p):
+            shutil.rmtree(p)
 
+        folders = [
+            os.path.join(p, 'exploration'),
+            os.path.join(p, 'correlation', 'plot'),
+            os.path.join(p, 'correlation', 'matrix'),
+            os.path.join(p, 'cross_validation'),
+            os.path.join(p, 'regression', 'plot'),
+            os.path.join(p, 'regression'),
+            os.path.join(p, 'classification'),
+            os.path.join(p, 'classification', 'plot'),
+        ]
 
-# def check_params(params):
-#
+        for p in folders:
+            Path(p).mkdir(parents=True, exist_ok=True)
+
+        print('>>> Previous data has been deleted')
+    else:
+        print('>>> Previous data has not been deleted')
