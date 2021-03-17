@@ -28,14 +28,14 @@ def read_args():
     if settings_args['cpu'] == 0 or settings_args['cpu'] > mlp.cpu_count():
         settings_args['cpu'] = mlp.cpu_count()
 
-    dataset_args = dict(filename=cfg.get('dataset', 'fname'), sep=cfg.get('dataset', 'separator'))
+    dataset_args = dict(filename=cfg.get('dataset', 'fname'), sep=cfg.get('dataset', 'separator'), skiprows=cfg.getint('dataset', 'skiprows'))
 
     regression_args = dict(y=cfg.get('regression', 'y'), resampling=ast.literal_eval(cfg.get('regression', 'resampling')))
 
     classification_args = dict(y=cfg.get('classification', 'y'), resampling=ast.literal_eval(cfg.get('classification', 'resampling')))
 
     args = dict(settings=settings_args, dataset=dataset_args, regression=regression_args, classification=classification_args)
-    print(f'>>> Parameters: {args}')
+    print(f'> Parameters: {args}')
 
     return args
 
