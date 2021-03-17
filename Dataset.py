@@ -82,7 +82,7 @@ class Dataset:
 
         if len(cols) == len(newcols):
             for c, nc in zip(cols, newcols):
-                self.dataset.insert(self.dataset.columns.get_loc(c)+1, nc, pd.factorize(self.dataset[c])[0])
+                self.dataset.insert(self.dataset.columns.get_loc(c) + 1, nc, pd.factorize(self.dataset[c])[0])
             print(f">>> The following categorical columns were coded into numbers: {', '.join(cols)}")
             print(f">>> The number columns are named as follows: {', '.join(newcols)}")
         else:
@@ -93,6 +93,32 @@ class Dataset:
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=seed,
                                                             shuffle=shuffle)
         return [X_train, X_test, Y_train, Y_test]
+
+    def check_cols_regression(self, enable: int, cols: list):
+        if enable == 1:
+            cols_Y = cols.split(',')
+
+            for c in cols_Y:
+                if not c in self.dataset.columns:
+                    print(f'La colonna "{c}" non esiste all\'interno del dataset')
+                    exit()
+
+                if not self.dataset[c].dtype in ['int64', 'float64']:
+                    print(f'La colonna "{c}" non è di tipo numerico')
+                    exit()
+
+    def check_cols_classification(self, enable: int, cols: list):
+        if enable == 1:
+            cols_Y = cols.split(',')
+
+            for c in cols_Y:
+                if not c in self.dataset.columns:
+                    print(f'La colonna "{c}" non esiste all\'interno del dataset')
+                    exit()
+
+                if not self.dataset[c].dtype in ['object']:
+                    print(f'La colonna "{c}" non è di tipo categoriale')
+                    exit()
 
     def export_csv(self):
         self.dataset.to_csv(os.path.join(os.getcwd(), 'results', 'dataset_processed.csv'), index=False,
