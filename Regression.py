@@ -7,6 +7,7 @@ from itertools import combinations, chain, product
 import multiprocessing as mlp
 from joblib import Parallel, delayed
 
+
 class Regression:
 
     def automate(self, dataset):
