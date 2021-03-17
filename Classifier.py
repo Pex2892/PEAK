@@ -3,52 +3,141 @@ import pandas as pd
 import sklearn.metrics as sm
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+import ast
+from sklearn.model_selection import train_test_split
+import math
 
 
 class Classifier:
-    def __init__(self, X, Y, labels, tt_set, test_size, seed):
-        self.df = pd.DataFrame(columns=['classifier', 'X', 'Y', 'dim_test_set', 'random_state', 'mc_true_negative',
-                                        'mc_false_positive', 'mc_false_negative', 'mc_true_positive', 'accuracy',
-                                        'precision', 'recall', 'f1', 'roc_curve_auc'])
 
-        self.X = X
-        self.Y_numeric = Y
-        self.Y_categorial = labels
-        self.tt_set = tt_set
-        self.test_size = test_size
-        self.seed = seed
-        self.all_roc_curve = []
+    def automate(self, dataset):
+        # Loading the best results obtained from hyper parameters
+        df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_best_hyperparams_classification.csv'), sep='\t')
 
-    def calculate(self, model, name_model: str, show_plot: bool, fig_name: str):
-        model = model.fit(self.tt_set[0], self.tt_set[2])  # passiamo i set di addestramento
-        probas_ = model.predict_proba(self.tt_set[1])
+        roc_curve_clf = []
+        for i, v in df.iterrows():
+            model = self._recognize_clf(v['model'], v['parameters'], v['random_state'])
+            model_name = v['model'].replace('()', '')
+            colsY = v['Y'].split(',')
+            colsX = v['X'].split(',')
+            test_size = math.ceil(dataset[colsX].shape[0] / v['n_splits'])
+
+            r = self.calculate(dataset, model, model_name, colsX, colsY, test_size=test_size,
+                               seed=v['random_state'], show_plot=False)
+            roc_curve_clf.append(r)
+
+        # plot all roc curve
+        self.plot_all_roc_curve(roc_curve_clf, show_plot=False)
+
+    def _recognize_clf(self, m, p, s):
+        params = ast.literal_eval(p)
+        if m == 'LogisticRegression()':
+            model = LogisticRegression()
+            model.C = params['C']
+            model.penalty = params['penalty']
+            model.solver = params['solver']
+        elif m == 'KNeighborsClassifier()':
+            model = KNeighborsClassifier()
+            model.n_neighbors = params['n_neighbors']
+            model.weights = params['weights']
+            model.metric = params['metric']
+            model.algorithm = params['algorithm']
+        elif m == 'SVC()':
+            model = SVC()
+            model.C = params['C']
+            model.gamma = params['gamma']
+            model.kernel = params['kernel']
+            model.probability = True
+        elif m == 'RandomForestClassifier()':
+            model = RandomForestClassifier()
+            model.class_weight = params['class_weight']
+            model.criterion = params['criterion']
+            model.max_features = params['max_features']
+            model.n_estimators = params['n_estimators']
+        elif m == 'GaussianNB()':
+            model = GaussianNB()
+            model.var_smoothing = params['var_smoothing']
+        elif m == 'DecisionTreeClassifier()':
+            model = DecisionTreeClassifier()
+            model.class_weight = params['class_weight']
+            model.criterion = params['criterion']
+            model.max_features = params['max_features']
+            model.splitter = params['splitter']
+        elif m == 'MLPClassifier()':
+            model = MLPClassifier()
+            model.activation = params['activation']
+            model.alpha = params['alpha']
+            model.hidden_layer_sizes = params['hidden_layer_sizes']
+            model.learning_rate = params['learning_rate']
+            model.max_iter = params['max_iter']
+            model.solver = params['solver']
+        else:
+            print('ERROR')
+            exit()
+
+        model.random_state = s
+        return model
+
+    def calculate(self, dataset, model, model_name: str, colsX, colsY, test_size, seed, show_plot: bool = True, fig_name: str = None):
+
+        X_train, X_test, Y_train, Y_test = train_test_split(dataset[colsX], dataset[colsY], test_size=test_size, random_state=None)
+
+        m = model.fit(X_train, Y_train)
+        probas_ = m.predict_proba(X_test)
 
         # Predicting the Test set results
-        Y_pred = model.predict(self.tt_set[1])  # eseguiamo la predizione sul test set
+        Y_pred = model.predict(X_test)
 
-        # calcolo ed estraggo la matrice di confusione
-        # confusion_matrix è solo per 2 label, se di più si usa multilabel_confusion_matrix
-        tn, fp, fn, tp = sm.confusion_matrix(self.tt_set[3], Y_pred).ravel()
+        # the confusion matrix
+        # the "confusion_matrix" method is used only with 2 categories
+        # if more than 2 you must use the "multilabel_confusion_matrix" method
+        tn, fp, fn, tp = sm.confusion_matrix(Y_test, Y_pred).ravel()
 
-        # Posso sapere tutte le caratteristiche del classificatore
+        # Build a text report showing the main classification metrics.
         # print(sm.classification_report(Y_test, Y_pred))
 
-        fpr, tpr, thresholds = sm.roc_curve(self.tt_set[3], probas_[:, 1])
+        # ROC CURVE
+        fpr, tpr, thresholds = sm.roc_curve(Y_test, probas_[:, 1])
 
+        # This list contains the following metrics: accuracy, precision, recall, F1, AUC
         scores = [
-            sm.accuracy_score(self.tt_set[3], Y_pred),
-            sm.precision_score(self.tt_set[3], Y_pred),
-            sm.recall_score(self.tt_set[3], Y_pred),
-            sm.f1_score(self.tt_set[3], Y_pred),
+            sm.accuracy_score(Y_test, Y_pred),
+            sm.precision_score(Y_test, Y_pred),
+            sm.recall_score(Y_test, Y_pred),
+            sm.f1_score(Y_test, Y_pred),
             sm.auc(fpr, tpr)
         ]
 
+        # PLOT
+        if fig_name is None:
+            fig_name = f'{model_name}_clf.png'
+
+        p = {
+            'model': m,
+            'X_test': X_test,
+            'Y_test': Y_test,
+            'Y_label': dataset.iloc[:, dataset.columns.get_loc(colsY[0])-1].unique(),
+            'fpr': fpr,
+            'tpr': tpr,
+            'scores': scores
+        }
+
+        self.plot_classifier(p, show_plot, f'{model_name} – {",".join(colsY)} ~ {",".join(colsX)}', fig_name)
+
+        # export
         row = {
-            'classifier': name_model,
-            'X': ', '.join(self.X.columns.values),
-            'Y': ', '.join(self.Y_numeric.columns.values),
-            'dim_test_set': self.test_size,
-            'random_state': self.seed,
+            'classifier': model_name,
+            'X': ', '.join(colsX),
+            'Y': ', '.join(colsY),
+            'dim_test_set': test_size,
+            'random_state': seed,
             'mc_true_negative': tn,
             'mc_false_positive': fp,
             'mc_false_negative': fn,
@@ -59,29 +148,26 @@ class Classifier:
             'f1': scores[3],
             'roc_curve_auc': scores[4]
         }
-        self.df = self.df.append(row, ignore_index=True)
+        p = os.path.join(os.getcwd(), 'results', 'classification', 'classification.csv')
+        pd.DataFrame([row]).to_csv(p, mode='a', index=False, header=not os.path.exists(p), sep='\t', encoding='utf-8')
 
-        self.all_roc_curve.append([name_model, fpr, tpr, round(scores[4], 2)])
+        return [model_name, fpr, tpr, round(scores[4], 2)]
 
-        self.plot_classifier(model, fpr, tpr, scores, show_plot,
-                             f'{name_model} – {",".join(self.Y_numeric.columns.values)} ~ {",".join(self.X.columns.values)}',
-                             fig_name)
-
-    def plot_classifier(self, model, fpr, tpr, scores, show_plot, title_plot, figname: str):
+    def plot_classifier(self, p: dict, show_plot: bool, title_plot: str, figname: str):
         fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
         fig.suptitle(f'{title_plot}')
 
         # 1° Plot – Matrice di confusione
-        sm.plot_confusion_matrix(model, self.tt_set[1], self.tt_set[3], display_labels=self.Y_categorial, cmap='GnBu',
+        sm.plot_confusion_matrix(p['model'], p['X_test'], p['Y_test'], display_labels=p['Y_label'], cmap='GnBu',
                                  normalize=None, ax=axs[0])
         axs[0].set_title(f'Matrix Confusion')
 
         # 2° Plot – Misure di performance
-        height = scores[0:-1]
+        height = p['scores'][0:-1]
         bars = ['Accuracy', 'Precision', 'Recall', 'F1']
         colors = ['#0868ac', '#2b8cbe', '#7bccc4', '#bae4bc']
-        handles = [mpatches.Patch(color=colors[i], label=round(scores[i], 2)) for i in range(0, len(bars))]
+        handles = [mpatches.Patch(color=colors[i], label=round(p['scores'][i], 2)) for i in range(0, len(bars))]
         axs[1].bar(bars, height, color=colors)
         axs[1].set_xlabel('Metrics')
         axs[1].set_ylabel('Score')
@@ -91,7 +177,7 @@ class Classifier:
         axs[1].set_ylim(0.0, 1.0)
 
         # 3° Plot – Curva ROC
-        axs[2].plot(fpr, tpr, color=colors[0], label=f'AUC = {round(scores[4], 2)}')
+        axs[2].plot(p['fpr'], p['tpr'], color=colors[0], label=f"AUC = {round(p['scores'][4], 2)}")
         axs[2].plot([0, 1], [0, 1], color='#DCDCDC', linestyle='--')
         axs[2].set_xlim([0.0, 1.0])
         axs[2].set_ylim([0.0, 1.0])
@@ -105,12 +191,12 @@ class Classifier:
         if show_plot:
             plt.show()
         else:
-            plt.savefig(os.path.join(os.getcwd(), 'results', figname))
+            plt.savefig(os.path.join(os.getcwd(), 'results', 'classification', 'plot', figname))
         plt.close()
 
-    def plot_all_roc_curve(self, show_plot, title_plot, fig_name: str):
+    def plot_all_roc_curve(self, roc_curve, show_plot: bool):
         plt.figure(figsize=(8, 5))
-        for item in self.all_roc_curve:
+        for item in roc_curve:
             plt.plot(item[1], item[2], label=f'{item[0]} - AUC = {item[3]}')
         plt.plot([0, 1], [0, 1], color='#DCDCDC', linestyle='--')
         plt.xlim([0.0, 1.0])
@@ -118,15 +204,10 @@ class Classifier:
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.legend(loc="lower right")
-        plt.title(title_plot)
+        plt.title('ROC curve of all classifiers')
         plt.tight_layout()
 
         if show_plot:
             plt.show()
         else:
-            plt.savefig(os.path.join(os.getcwd(), 'results', fig_name))
-
-    def export_csv(self, f: str):
-        self.df.to_csv(os.path.join(os.getcwd(), 'results', f), index=False, header=True, sep='\t', encoding='utf-8')
-
-
+            plt.savefig(os.path.join(os.getcwd(), 'results', 'classification', 'plot', 'all_roc_curve.png'))
