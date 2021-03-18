@@ -1,8 +1,12 @@
 import os
+import ast
+import numpy as np
 import pandas as pd
-import sklearn.metrics as sm
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+import math
+from itertools import product
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -10,28 +14,126 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
-import ast
-from sklearn.model_selection import train_test_split
-import math
+import sklearn.metrics as sm
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import warnings
+import sys
+
+# The only way I could suppress all Scikit-learn warnings,
+# is by issuing the following code at the beginning of the module
+# (but note that will suppress all warnings).
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+    os.environ["PYTHONWARNINGS"] = "ignore"
 
 
 class Classifier:
+    def __init__(self, ds, settings, init_settings):
+        self.objDS = ds
+        self.settings = settings
+        self.init_settings = init_settings
 
-    def automate(self, dataset):
+    def automate(self):
+        if self.settings['enable'] == 1:
+            # self._resampling()
+            print('>>> Resampling with different classifiers has been completed.')
+
+            self._calculate()
+
+    def _resampling(self):
+        # example of grid searching key hyperparametres for logistic regression
+        # define dataset
+
+        Y_col = f"{self.settings['y']}_fact"
+        print(f'Columns in Y: {Y_col}')
+
+        X = self.objDS.dataset[self.objDS.dataset.columns.difference([self.settings['y'], f"{self.settings['y']}_fact"])].select_dtypes(include=['int64', 'float64'])
+        print(f'Columns in X: {X.columns.values}')
+
+        # list of classifiers with different combinations of parameters
+        models = [
+            [LogisticRegression(), dict(solver=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'], penalty=['l1', 'l2', 'elasticnet', 'none'], C=[100, 10, 1.0, 0.1, 0.01])],
+            [KNeighborsClassifier(), dict(n_neighbors=range(1, 21, 2), weights=['uniform', 'distance'], algorithm=['ball_tree', 'kd_tree', 'brute'], metric=['euclidean', 'manhattan', 'minkowski'])],
+            [SVC(), dict(kernel=['linear', 'poly', 'rbf', 'sigmoid'], C=[50, 10, 1.0, 0.1, 0.01], gamma=['scale'])],
+            [RandomForestClassifier(), dict(n_estimators=[10, 100, 1000], criterion=['gini', 'entropy'], max_features=['sqrt', 'log2', 'none'], class_weight=['balanced', 'balanced_subsample', 'none'])],
+            [GaussianNB(), dict(var_smoothing=np.logspace(0, -9, num=100))],
+            [DecisionTreeClassifier(), dict(criterion=['gini', 'entropy'], splitter=['best', 'random'], max_features=['sqrt', 'log2', 'none'], class_weight=['balanced', 'none'])],
+            [MLPClassifier(), dict(hidden_layer_sizes=[(50, 50, 50), (50, 100, 50), (100,)], activation=['identity', 'logistic', 'tanh', 'relu'], solver=['lbfgs', 'sgd', 'adam'], alpha=[0.0001, 0.05], learning_rate=['constant', 'invscaling', 'adaptive'], max_iter=[100, 200])]
+        ]
+        cv = [RepeatedStratifiedKFold(n_splits=i, n_repeats=self.settings['resampling']['n_repeats'], random_state=self.init_settings['seed'])
+              for i in range(self.settings['resampling']['min_split'], self.settings['resampling']['max_split'] + 1, 1)]
+
+        combs = list(product(*[models, cv]))
+        print(f'>>> Number of tests to be carried out: {len(combs)}')
+
+        rows = list()
+        best_rows = list()
+        for i in range(0, len(combs)):
+            print(f'{i+1}) Combination being tested: {combs[i]}')
+
+            # 3.2 call GridSearchCV()
+            gs = GridSearchCV(estimator=combs[i][0][0], param_grid=combs[i][0][1], n_jobs=self.init_settings['cpu'], cv=combs[i][1], scoring=self.settings['resampling']['scoring'], error_score=0)
+            grid_result = gs.fit(X, self.objDS.dataset.loc[:, Y_col])
+
+            for j in range(0, grid_result.cv_results_['mean_test_score'].shape[0], 1):
+                rows.append({
+                    'model': gs.estimator,
+                    'X': ','.join(X.columns.values),
+                    'Y': Y_col,
+                    'cv': combs[i][1].__str__().split('(')[0],
+                    'n_splits': int(combs[i][1].get_n_splits(X) / combs[i][1].n_repeats),
+                    'n_repeats': combs[i][1].n_repeats,
+                    'random_state': combs[i][1].random_state,
+                    'scoring': self.settings['resampling']['scoring'],
+                    'mean_test_score': grid_result.cv_results_['mean_test_score'][j],
+                    'std_test_score': grid_result.cv_results_['std_test_score'][j],
+                    'parameters': grid_result.cv_results_['params'][j]
+                })
+
+            best_rows.append({
+                'model': gs.estimator,
+                'X': ','.join(X.columns.values),
+                'Y': Y_col,
+                'cv': combs[i][1].__str__().split('(')[0],
+                'n_splits': int(combs[i][1].get_n_splits(X) / combs[i][1].n_repeats),
+                'n_repeats': combs[i][1].n_repeats,
+                'random_state': combs[i][1].random_state,
+                'scoring': self.settings['resampling']['scoring'],
+                'mean_test_score': grid_result.cv_results_['mean_test_score'][grid_result.best_index_],
+                'std_test_score': grid_result.cv_results_['std_test_score'][grid_result.best_index_],
+                'parameters': grid_result.cv_results_['params'][grid_result.best_index_]
+            })
+
+        pd.DataFrame(rows).to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'resampling_classification.csv'),
+                                  index=False, header=True, sep='\t', encoding='utf-8')
+        print(f'>>> The file "resampling_classification.csv" has been saved')
+        print(f'{"-" * 25}')
+
+        # Extracting for each classifier the best combination of parameters with the smallest standard deviation
+        pd.DataFrame(best_rows).to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'best_resampling_classification.csv'),
+                                       index=False, header=True, sep='\t', encoding='utf-8')
+        df_best = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'best_resampling_classification.csv'), sep='\t')
+        df_group = df_best.groupby(by=['model'])
+        idx = df_group['mean_test_score'].idxmin().to_list()
+        df_best.iloc[idx, :].to_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'best_resampling_classification.csv'),
+                                    index=False, header=True, sep='\t', encoding='utf-8')
+        print(f'>>> The file "best_resampling_classification.csv" has been saved')
+        print(f'{"-" * 25}')
+
+    def _calculate(self):
         # Loading the best results obtained from hyper parameters
-        df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'CV_best_hyperparams_classification.csv'), sep='\t')
+        df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'best_resampling_classification.csv'), sep='\t')
 
         roc_curve_clf = []
         for i, v in df.iterrows():
             model = self._recognize_clf(v['model'], v['parameters'], v['random_state'])
             model_name = v['model'].replace('()', '')
-            colsY = v['Y'].split(',')
-            colsX = v['X'].split(',')
-            test_size = round(dataset[colsX].shape[0] / v['n_splits'])
-            train_size = dataset.shape[0] - test_size
+            Y_col = v['Y']
+            X_cols = v['X'].split(',')
+            test_size = math.ceil(self.objDS.dataset.shape[0] / v['n_splits'])
 
-            r = self.calculate(dataset, model, model_name, colsX, colsY, train_size=train_size, test_size=test_size,
-                               seed=v['random_state'], show_plot=False)
+            r = self._classifier(model, model_name, X_cols, Y_col, test_size=test_size, seed=v['random_state'])
             roc_curve_clf.append(r)
 
         # plot all roc curve
@@ -86,57 +188,55 @@ class Classifier:
         model.random_state = s
         return model
 
-    def calculate(self, dataset, model, model_name: str, colsX, colsY, train_size, test_size, seed, show_plot: bool = True, fig_name: str = None):
+    def _classifier(self, model, model_name: str, X_cols, Y_col, test_size, seed):
+        X_train, X_test, y_train, y_test = train_test_split(self.objDS.dataset[X_cols], self.objDS.dataset[Y_col],
+                                                            test_size=test_size, random_state=seed)
 
-        X_train, X_test, Y_train, Y_test = train_test_split(dataset[colsX], dataset[colsY], train_size=train_size, test_size=test_size, random_state=seed)
-
-        m = model.fit(X_train, Y_train)
+        m = model.fit(X_train, y_train)
         probas_ = m.predict_proba(X_test)
 
         # Predicting the Test set results
-        Y_pred = model.predict(X_test)
+        y_pred = model.predict(X_test)
 
         # the confusion matrix
         # the "confusion_matrix" method is used only with 2 categories
         # if more than 2 you must use the "multilabel_confusion_matrix" method
-        tn, fp, fn, tp = sm.confusion_matrix(Y_test, Y_pred).ravel()
+        tn, fp, fn, tp = sm.confusion_matrix(y_test, y_pred).ravel()
 
         # Build a text report showing the main classification metrics.
         # print(sm.classification_report(Y_test, Y_pred))
 
         # ROC CURVE
-        fpr, tpr, thresholds = sm.roc_curve(Y_test, probas_[:, 1])
+        fpr, tpr, thresholds = sm.roc_curve(y_test, probas_[:, 1])
 
         # This list contains the following metrics: accuracy, precision, recall, F1, AUC
         scores = [
-            sm.accuracy_score(Y_test, Y_pred),
-            sm.precision_score(Y_test, Y_pred),
-            sm.recall_score(Y_test, Y_pred),
-            sm.f1_score(Y_test, Y_pred),
+            sm.accuracy_score(y_test, y_pred),
+            sm.precision_score(y_test, y_pred),
+            sm.recall_score(y_test, y_pred),
+            sm.f1_score(y_test, y_pred),
             sm.auc(fpr, tpr)
         ]
 
+        print(Y_col)
         # PLOT
-        if fig_name is None:
-            fig_name = f'{model_name}_clf.png'
-
         p = {
             'model': m,
             'X_test': X_test,
-            'Y_test': Y_test,
-            'Y_label': dataset.iloc[:, dataset.columns.get_loc(colsY[0])-1].unique(),
+            'Y_test': y_test,
+            'Y_label': self.objDS.dataset.iloc[:, self.objDS.dataset.columns.get_loc(Y_col) - 1].unique(),
             'fpr': fpr,
             'tpr': tpr,
             'scores': scores
         }
 
-        self.plot_classifier(p, show_plot, f'{model_name} – {",".join(colsY)} ~ {",".join(colsX)}', fig_name)
+        self.plot_classifier(p, False, f'{model_name} – {Y_col} ~ {",".join(X_cols)}', f'{model_name}_clf.png')
 
         # export
         row = {
             'classifier': model_name,
-            'X': ', '.join(colsX),
-            'Y': ', '.join(colsY),
+            'X': ', '.join(X_cols),
+            'Y': Y_col,
             'dim_test_set': test_size,
             'random_state': seed,
             'mc_true_negative': tn,
