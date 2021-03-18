@@ -7,17 +7,18 @@ from matplotlib import colors, pyplot as plt
 
 class Explore:
 
-    def automate(self, obj):
-        cols = obj.dataset.select_dtypes(include=['object']).columns.values
+    def automate(self, ds):
+        cols = ds.dataset.select_dtypes(include=['object']).columns.values
 
         for c in cols:
-            n = pd.unique(obj.dataset[c]).shape[0]
+            print(f'>>> Plotting the "{c}" column')
+            n = pd.unique(ds.dataset[c]).shape[0]
             title = f'Distribution of {"".join(re.split("[^a-zA-Z]*", c))}'
             figname = f'explore_{"".join(re.split("[^a-zA-Z]*", c))}.png'
             if 1 < n < 7:
-                self.multiple_barplot(data=[[obj.dataset[c], title, 'Labels', 'Frequency']], tot_subplots=1, tot_columns=1, title='', show=False, figname=figname)
+                self.multiple_barplot(data=[[ds.dataset[c], title, 'Labels', 'Frequency']], tot_subplots=1, tot_columns=1, title='', show=False, figname=figname)
             else:
-                self.multiple_barplot_horizontal(data=[[obj.dataset[c], title, 'Frequency', 'Labels', 1]], tot_subplots=1, tot_columns=1, title='', show=False, figname=figname)
+                self.multiple_barplot_horizontal(data=[[ds.dataset[c], title, 'Frequency', 'Labels', 1]], tot_subplots=1, tot_columns=1, title='', show=False, figname=figname)
 
     def multiple_barplot(self, data: list, tot_subplots: int, tot_columns: int, title: str, show=True, figname='multiplebarplot.png', figsize=(10, 5)):
         # Compute Rows required
