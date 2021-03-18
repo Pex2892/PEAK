@@ -25,7 +25,7 @@ class Regression:
             self._resampling()
             print('>>> Resamplig using linear regression has been completed')
 
-            self.calculate()
+            self._calculate()
 
     def _resampling(self):
         Y_cols = self.settings['y'].split(',')
@@ -113,7 +113,7 @@ class Regression:
         print(f'>>> The file "best_resampling_regression.csv" has been saved')
         print(f'{"-" * 25}')
 
-    def calculate(self):
+    def _calculate(self):
         # Loading the best resampling results
         df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'best_resampling_regression.csv'), sep='\t')
 
