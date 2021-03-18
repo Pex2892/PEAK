@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import math
 from itertools import combinations, chain
 import multiprocessing as mlp
 from joblib import Parallel, delayed
@@ -15,13 +16,13 @@ import matplotlib.pyplot as plt
 class Regression:
 
     def __init__(self, ds, settings, init_settings):
-        self.dataset = ds.dataset
+        self.objDS = ds
         self.settings = settings
         self.init_settings = init_settings
 
     def automate(self):
         if self.settings['enable'] == 1:
-            # self._resampling()
+            self._resampling()
             print('>>> Resamplig using linear regression has been completed')
 
             self.calculate()
@@ -30,7 +31,7 @@ class Regression:
         Y_cols = self.settings['y'].split(',')
         print(f'Columns in Y: {Y_cols}')
 
-        X = self.dataset[self.dataset.columns.difference(Y_cols)].select_dtypes(include=['int64', 'float64'])
+        X = self.objDS.dataset[self.objDS.dataset.columns.difference(Y_cols)].select_dtypes(include=['int64', 'float64'])
         print(f'Columns in X: {X.columns.values}')
 
         # step-1: create a cross-validation scheme
@@ -55,7 +56,7 @@ class Regression:
                               return_train_score=True, n_jobs=self.init_settings['cpu'])
 
             # fit the model
-            grid_result = gs.fit(X, self.dataset.loc[:, Y_cols])
+            grid_result = gs.fit(X, self.objDS.dataset.loc[:, Y_cols])
 
             for j in range(0, grid_result.cv_results_['mean_test_score'].shape[0], 1):
                 rows.append({
@@ -120,18 +121,18 @@ class Regression:
         for i, v in df.iterrows():
             Y_cols = v['Y'].split(',')
 
-            X = self.dataset[self.dataset.columns.difference(Y_cols)].select_dtypes(include=['int64', 'float64'])
+            X = self.objDS.dataset[self.objDS.dataset.columns.difference(Y_cols)].select_dtypes(include=['int64', 'float64'])
 
             X_cols = list(combinations(X.columns.values, v['n_features_X']))
             X_cols = list(map(list, X_cols))  # convert tuple to list
 
-            test_size = int(self.dataset.shape[0]/v['n_splits'])
+            test_size = math.ceil(self.objDS.dataset.shape[0]/v['n_splits'])
             combs.append([[c, Y_cols, test_size] for c in X_cols])
 
         # flatten list
         combs = list(chain(*combs))
-        r = Parallel(n_jobs=mlp.cpu_count(), verbose=5)(delayed(self.linear_regression)
-                                                        (combs[i]) for i in range(0, len(combs), 1))
+        print(f'Number of tests to be carried out: {len(combs)}')
+        r = Parallel(n_jobs=mlp.cpu_count())(delayed(self.linear_regression)(combs[i]) for i in range(0, len(combs), 1))
 
         pd.DataFrame(r).to_csv(os.path.join(os.getcwd(), 'results', 'regression', 'regression.csv'),
                                index=False, header=True, sep='\t', encoding='utf-8')
@@ -139,7 +140,7 @@ class Regression:
         print(f'{"-" * 25}')
 
     def linear_regression(self, items: list):
-        X_train, X_test, y_train, y_test = train_test_split(self.dataset[items[0]], self.dataset[items[1]],
+        X_train, X_test, y_train, y_test = train_test_split(self.objDS.dataset[items[0]], self.objDS.dataset[items[1]],
                                                             test_size=items[2], random_state=self.init_settings['seed'])
 
         model = LinearRegression(fit_intercept=True, positive=True)
@@ -147,7 +148,7 @@ class Regression:
 
         y_pred = model.predict(X_test)
 
-        n_obs, n_regressors = self.dataset[items[0]].shape
+        n_obs, n_regressors = self.objDS.dataset[items[0]].shape
         if len(items[1]) == 1 and len(items[0]) == 1:
             type_lm = 'Linear regression'
         elif len(items[1]) == 1 and len(items[0]) > 1:
@@ -159,7 +160,7 @@ class Regression:
             'method': type_lm,
             'Y': ','.join(items[1]),
             'X': ','.join(items[0]),
-            'train_size': (self.dataset.shape[0] - items[2]),
+            'train_size': (self.objDS.dataset.shape[0] - items[2]),
             'test_size': items[2],
             'random_state': self.init_settings['seed'],
             'r2_score_test': sm.r2_score(y_test, y_pred),
