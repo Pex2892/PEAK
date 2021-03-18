@@ -89,11 +89,6 @@ class Dataset:
             print('The lengths between "cols" and "newcols" are not the same')
             exit()
 
-    def split(self, X, Y, test_size, seed, shuffle):
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=seed,
-                                                            shuffle=shuffle)
-        return [X_train, X_test, Y_train, Y_test]
-
     def check_cols_regression(self, enable: int, cols: list):
         if enable == 1:
             cols_Y = cols.split(',')
