@@ -52,7 +52,7 @@ def clear_data(clear: bool):
             os.path.join(p, 'correlation', 'plot'),
             os.path.join(p, 'correlation', 'matrix'),
             os.path.join(p, 'cross_validation'),
-            os.path.join(p, 'regression', 'plot'),
+            os.path.join(p, 'cross_validation', 'plot'),
             os.path.join(p, 'regression'),
             os.path.join(p, 'classification'),
             os.path.join(p, 'classification', 'plot'),
