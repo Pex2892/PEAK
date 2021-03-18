@@ -141,7 +141,8 @@ class Regression:
 
     def linear_regression(self, items: list):
         X_train, X_test, y_train, y_test = train_test_split(self.objDS.dataset[items[0]], self.objDS.dataset[items[1]],
-                                                            test_size=items[2], random_state=self.init_settings['seed'])
+                                                            test_size=items[2], random_state=self.init_settings['seed'],
+                                                            shuffle=True)
 
         model = LinearRegression(fit_intercept=True, positive=True)
         model = model.fit(X_train, y_train)
