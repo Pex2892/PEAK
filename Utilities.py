@@ -41,8 +41,8 @@ def read_args():
 
 
 def clear_data(clear: bool):
-
-    if clear == 1:
+    p = os.path.join(os.getcwd(), 'results')
+    if clear == 1 or not os.path.exists(p):
         p = os.path.join(os.getcwd(), 'results')
         if os.path.exists(p):
             shutil.rmtree(p)
