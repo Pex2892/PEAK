@@ -36,7 +36,7 @@ class Classifier:
 
     def automate(self):
         if self.settings['enable'] == 1:
-            # self._resampling()
+            self._resampling()
             print('>>> Resampling with different classifiers has been completed.')
 
             self._calculate()
