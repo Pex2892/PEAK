@@ -1,5 +1,5 @@
 from Dataset import Dataset
-from Explore import Explore
+from EDA import EDA
 from Correlation import Correlation
 from Regression import Regression
 from Classifier import Classifier
@@ -32,9 +32,9 @@ ds.categorial_to_numeric()
 # ----- DATASET BACKUP -----
 ds.export_csv()
 
-# ----- DATA EXPLORATION -----
-ex = Explore()
-ex.automate(ds)
+# ----- EXPLORATORY DATA ANALYSIS -----
+eda = EDA()
+eda.automate(ds)
 
 # ----- CORRELATION -----
 corr = Correlation()

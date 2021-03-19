@@ -5,7 +5,7 @@ import pandas as pd
 from matplotlib import colors, pyplot as plt
 
 
-class Explore:
+class EDA:
 
     def automate(self, ds):
         cols = ds.dataset.select_dtypes(include=['object']).columns.values
