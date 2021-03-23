@@ -48,7 +48,7 @@ def clear_data(clear: bool):
             shutil.rmtree(p)
 
         folders = [
-            os.path.join(p, 'exploration'),
+            os.path.join(p, 'eda'),
             os.path.join(p, 'correlation', 'plot'),
             os.path.join(p, 'correlation', 'matrix'),
             os.path.join(p, 'cross_validation'),

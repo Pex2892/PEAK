@@ -61,7 +61,7 @@ class EDA:
         if show:
             plt.show()
         else:
-            plt.savefig(os.path.join(os.getcwd(), 'results', 'exploration', figname))
+            plt.savefig(os.path.join(os.getcwd(), 'results', 'eda', figname))
         plt.close()
 
     def multiple_barplot_horizontal(self, data: list, tot_subplots: int, tot_columns: int, title: str, show=True, figname='multiplebarplot.png', figsize=(10, 5)):
@@ -108,5 +108,5 @@ class EDA:
         if show:
             plt.show()
         else:
-            plt.savefig(os.path.join(os.getcwd(), 'results', 'exploration', figname))
+            plt.savefig(os.path.join(os.getcwd(), 'results', 'eda', figname))
         plt.close()
