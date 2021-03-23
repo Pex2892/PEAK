@@ -22,7 +22,7 @@ class Correlation:
         df_corr = df_corr.append(r, ignore_index=True)
         print('>>> Plotted all correlations between numeric columns')
 
-        self.matrix_corr(ds.dataset, ['pearson', 'spearman', 'kendall'], show=False, figsize=(15, 7))
+        self.matrix_corr(ds.dataset, ['pearson', 'spearman', 'kendall'], show=False, figsize=(35, 15))
 
         df_corr.to_csv(os.path.join(os.getcwd(), 'results', 'correlation', 'all_correlations.csv'), index=False, header=True, sep='\t', encoding='utf-8')
 
