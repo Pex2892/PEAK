@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from dask import dataframe as dd
 import math
 from itertools import combinations, chain
 import multiprocessing as mlp
@@ -116,32 +117,46 @@ class Regression:
     def _calculate(self):
         # Loading the best resampling results
         df = pd.read_csv(os.path.join(os.getcwd(), 'results', 'cross_validation', 'best_resampling_regression.csv'), sep='\t')
+        print(f'>>> The dataset "best_resampling_regression.csv" has been successfully loaded')
 
-        combs = []
+        print(f'>>>> Total best rows: {df.shape[0]}')
+        Y_cols = df.loc[0, 'Y'].split(',')
+
+        X = self.objDS.dataset[self.objDS.dataset.columns.difference(Y_cols)].select_dtypes(include=['int64', 'float64'])
+        tot_X = len(X.columns.values)
+
         for i, v in df.iterrows():
-            Y_cols = v['Y'].split(',')
+            print(f'>>>>> Iteration: {i + 1}')
 
-            X = self.objDS.dataset[self.objDS.dataset.columns.difference(Y_cols)].select_dtypes(include=['int64', 'float64'])
+            k = self._check_combinatios(n=tot_X, k=v['n_features_X'])
+            print(f">>>>> n_features_X: {k}")
 
-            X_cols = list(combinations(X.columns.values, v['n_features_X']))
-            X_cols = list(map(list, X_cols))  # convert tuple to list
+            test_size = math.ceil(self.objDS.dataset.shape[0] / v['n_splits'])
+            r = Parallel(n_jobs=mlp.cpu_count(), verbose=1)(delayed(self.linear_regression)(list(x), Y_cols, test_size)
+                                                            for x in combinations(X.columns.values, k))
 
-            test_size = math.ceil(self.objDS.dataset.shape[0]/v['n_splits'])
-            combs.append([[c, Y_cols, test_size] for c in X_cols])
+            p = os.path.join(os.getcwd(), 'results', 'regression', 'regression.csv')
+            pd.DataFrame(r).to_csv(p, mode='a', index=False, header=not os.path.exists(p), sep='\t', encoding='utf-8')
 
-        # flatten list
-        combs = list(chain(*combs))
-        print(f'Number of tests to be carried out: {len(combs)}')
-        r = Parallel(n_jobs=mlp.cpu_count())(delayed(self.linear_regression)(combs[i]) for i in range(0, len(combs), 1))
-
-        pd.DataFrame(r).to_csv(os.path.join(os.getcwd(), 'results', 'regression', 'regression.csv'),
-                               index=False, header=True, sep='\t', encoding='utf-8')
         print(f'>>> The file "regression.csv" has been saved')
         print(f'{"-" * 25}')
 
-    def linear_regression(self, items: list):
-        X_train, X_test, y_train, y_test = train_test_split(self.objDS.dataset[items[0]], self.objDS.dataset[items[1]],
-                                                            test_size=items[2], random_state=self.init_settings['seed'],
+    def _check_combinatios(self, n, k):
+        # This method checks if the total number of combinations is not greater than 1 million.
+        # If it is greater, then lower the k by 1 with each iteration.
+        # Eventually it will return the k that falls in the range 0-1000000.
+
+        # n = Initialize the number of items to choose from
+        # k = Initialize the number of possibilities to choose
+        for _ in iter(int, 1):
+            if 0 < math.comb(n, k) <= 1000000:
+                return k
+            else:
+                k -= 1
+
+    def linear_regression(self, X_cols, Y_cols, test_size):
+        X_train, X_test, y_train, y_test = train_test_split(self.objDS.dataset[X_cols], self.objDS.dataset[Y_cols],
+                                                            test_size=test_size, random_state=self.init_settings['seed'],
                                                             shuffle=True)
 
         model = LinearRegression(fit_intercept=True, positive=True)
@@ -149,20 +164,20 @@ class Regression:
 
         y_pred = model.predict(X_test)
 
-        n_obs, n_regressors = self.objDS.dataset[items[0]].shape
-        if len(items[1]) == 1 and len(items[0]) == 1:
+        n_obs, n_regressors = self.objDS.dataset[X_cols].shape
+        if len(Y_cols) == 1 and len(X_cols) == 1:
             type_lm = 'Linear regression'
-        elif len(items[1]) == 1 and len(items[0]) > 1:
+        elif len(Y_cols) == 1 and len(X_cols) > 1:
             type_lm = 'Multiple linear regression'
-        elif len(items[1]) > 1 and len(items[0]) > 1:
+        elif len(Y_cols) > 1 and len(X_cols) > 1:
             type_lm = 'Multivariate linear regression'
 
         r = {
             'method': type_lm,
-            'Y': ','.join(items[1]),
-            'X': ','.join(items[0]),
-            'train_size': (self.objDS.dataset.shape[0] - items[2]),
-            'test_size': items[2],
+            'Y': ','.join(Y_cols),
+            'X': ','.join(X_cols),
+            'train_size': (self.objDS.dataset.shape[0] - test_size),
+            'test_size': test_size,
             'random_state': self.init_settings['seed'],
             'r2_score_test': sm.r2_score(y_test, y_pred),
             'adj_r2_score_test': (1 - (1 - sm.r2_score(y_test, y_pred)) * (n_obs - 1) / (n_obs - n_regressors - 1)),
@@ -171,4 +186,7 @@ class Regression:
             'median_absolute_error': sm.median_absolute_error(y_test, y_pred),
             'explain_variance_score': sm.explained_variance_score(y_test, y_pred)
         }
+        # p = os.path.join(os.getcwd(), 'results', 'regression', 'regression.csv')
+        # pd.DataFrame([r]).to_csv(p, mode='a', index=False, header=not os.path.exists(p), sep='\t', encoding='utf-8')
+
         return r
