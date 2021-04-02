@@ -42,8 +42,7 @@ Before starting the analysis, PEAK requires to configure "__settings.cfg__". In 
 - __Regression:__ it contains all the settings needed to start a regression analysis, such as the dependent variable name and the parameters useful for the resampling phase.
 - __Classification:__ it contains all the settings required for classification, such as the variable to be classified, the targets and the parameters needed for the resampling phase.
 
-You can test that you have correctly installed the PEAK 
-by running the following command:
+After that, you can run PEAK analysis:
 ```bash
 python3 main.py
 ```
