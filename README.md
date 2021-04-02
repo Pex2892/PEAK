@@ -36,7 +36,7 @@ python3 -m pip install -r requirements.txt
 
 # Run
 
-Before starting the analysis, PEAK requires to configure "__settings.cfg__". In this file, there are four sections: i) settings, ii) dataset, iii) regression, and iv) classification. Each section requires ad-ditional sub-parameters.
+Before starting the analysis, PEAK requires to configure "__settings.cfg__". In this file, there are four sections.
 - __Settings:__ this section contains the general settings of the tool, such as the seed, the number of CPUs, and the clearing of the previous results.
 - __Dataset:__ this section contains parameters related to the dataset, such as file name, separator, and the number of rows to skip.
 - __Regression:__ it contains all the settings needed to start a regression analysis, such as the dependent variable name and the parameters useful for the resampling phase.
