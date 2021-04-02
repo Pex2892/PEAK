@@ -16,7 +16,7 @@ PEAK is a Python tool designed to make easier the basic steps of pattern recogni
 ### Download zip
 ```bash
 wget https://github.com/Pex2892/PEAK/archive/main.zip
-unzip PEAK-main.zip
+unzip main.zip
 ```
 or
 ### Clone repository
