@@ -7,7 +7,7 @@
 ![last_update](https://img.shields.io/badge/last%20update-April%2002%2C%202021-yellowgreen)
 ![license](https://img.shields.io/badge/License-PEAK%20by%20Giuseppe%20Sgroi%20is%20licensed%20under%20CC%20BY--NC--SA%204.0-red)
 
-PEAK is a Python tool designed to make easier the basic steps of pattern recognition, data collec-tion, data exploration, data correlation, regression analysis, and/or classification. Therefore, PEAK allows less experienced users to reduce the time required for analysing data and promote the dis-covery of unknown relationships between different data.
+PEAK is a Python tool designed to make easier the basic steps of pattern recognition, data collection, data exploration, data correlation, regression analysis, and/or classification. Therefore, PEAK allows less experienced users to reduce the time required for analysing data and promote the dis-covery of unknown relationships between different data.
 
 ![PEAK-functional-scheme](https://user-images.githubusercontent.com/15036433/113410100-ee83aa00-93b2-11eb-8f0e-2ebbef8eb6db.png)
 
