@@ -8,7 +8,7 @@ from pathlib import Path
 
 def header():
     t = '========================================================\n' \
-         '=          PETAL – Pattern rEcognition frAmewoRk       =\n' \
+         '=          PEAK – Pattern rEcognition frAmewoRk        =\n' \
          '=                        v1.0                          =\n' \
          '=          Last update:     2021/04/01                 =\n' \
          '========================================================\n' \
