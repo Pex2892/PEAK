@@ -1,9 +1,9 @@
-from Dataset import Dataset
-from EDA import EDA
-from Correlation import Correlation
-from Regression import Regression
-from Classifier import Classifier
-import Utilities as ut
+from dataset import Dataset
+from eda import EDA
+from correlation import Correlation
+from regression import Regression
+from classifier import Classifier
+import utilities as ut
 
 # ----- INIT -----
 ut.header()
