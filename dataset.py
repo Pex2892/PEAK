@@ -17,10 +17,9 @@ class Dataset:
     def load(self):
         if os.path.exists(os.path.join(os.getcwd(), 'dataset', self.filename)):
             if self.type_db == '.csv':
-                print('CSV')
+                self.dataset = pd.read_csv(os.path.join(os.getcwd(), 'dataset', self.filename), sep=self.sep)
             elif self.type_db == '.xlsx':
                 self.dataset = pd.read_excel(os.path.join(os.getcwd(), 'dataset', self.filename))
-                # return self.df
         else:
             print(f'The file "{self.filename}" was not found.')
             exit()
