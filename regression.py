@@ -164,11 +164,12 @@ class Regression:
         y_pred = model.predict(X_test)
 
         n_obs, n_regressors = self.objDS.dataset[X_cols].shape
+
         if len(Y_cols) == 1 and len(X_cols) == 1:
             type_lm = 'Linear regression'
-        elif len(Y_cols) == 1 and len(X_cols) > 1:
+        elif len(Y_cols) == 1 and len(X_cols) >= 1:
             type_lm = 'Multiple linear regression'
-        elif len(Y_cols) > 1 and len(X_cols) > 1:
+        elif len(Y_cols) > 1 and len(X_cols) >= 1:
             type_lm = 'Multivariate linear regression'
 
         r = {
