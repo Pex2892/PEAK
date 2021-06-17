@@ -45,7 +45,7 @@ class Correlation:
             if show:
                 plt.show()
             else:
-                plt.savefig(os.path.join(os.getcwd(), 'results', 'correlation', 'plot', f'corr_{"".join(re.split("[^a-zA-Z]*", cols[0]))}_{"".join(re.split("[^a-zA-Z]*", cols[1]))}.png'))
+                plt.savefig(os.path.join(os.getcwd(), 'results', 'correlation', 'plot', f'corr_{"".join(re.split("[^a-zA-Z0-9]*", cols[0]))}_{"".join(re.split("[^a-zA-Z0-9]*", cols[1]))}.png'))
 
         row = {'columns': ' - '.join(cols), 'pearson': scores[0], 'spearman': scores[1], 'kendall': scores[2]}
 
