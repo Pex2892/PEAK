@@ -18,11 +18,11 @@ class Correlation:
 
         df_corr = pd.DataFrame(columns=['columns', 'pearson', 'spearman', 'kendall'])
 
-        r = Parallel(n_jobs=mlp.cpu_count())(delayed(self.corr_2_col)(ds.dataset, list(c), None, False, (8, 5)) for c in cc)
+        r = Parallel(n_jobs=mlp.cpu_count())(delayed(self.corr_2_col)(ds.dataset, list(c), None, False, (10, 5)) for c in cc)
         df_corr = df_corr.append(r, ignore_index=True)
         print('>>> Plotted all correlations between numeric columns')
 
-        self.matrix_corr(ds.dataset, ['pearson', 'spearman', 'kendall'], show=False, figsize=(35, 15))
+        self.matrix_corr(ds.dataset, ['pearson', 'spearman', 'kendall'], show=False, figsize=(10, 7))
 
         df_corr.to_csv(os.path.join(os.getcwd(), 'results', 'correlation', 'all_correlations.csv'), index=False, header=True, sep='\t', encoding='utf-8')
 
@@ -34,13 +34,17 @@ class Correlation:
             plt.figure(figsize=figsize)
             cmap = plt.cm.get_cmap('GnBu', 4)
             c_list = [colors.rgb2hex(cmap(i)) for i in range(1, cmap.N)]
+            methods = ['Pearson', 'Spearman', 'Kendall']
 
-            plt.bar(['Pearson', 'Spearman', 'Kendall'], scores, color=c_list)
+            for i in range(0, len(scores)):
+                plt.bar(methods[i], scores[i], color=c_list[i], label=f'{methods[i]}: {round(scores[i], 2)}')
 
             if title is None:
                 plt.title(f'Corr: {cols[0]} and {cols[1]}')
             else:
                 plt.title(title)
+
+            plt.legend()
 
             if show:
                 plt.show()
